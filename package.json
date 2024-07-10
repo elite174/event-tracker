@@ -1,0 +1,45 @@
+{
+  "name": "@elite174/event-tracker",
+  "version": "1.0.0",
+  "description": "A custom element for tracking events",
+  "author": "Vladislav Lipatov",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "browser": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "private": false,
+  "sideEffects": false,
+  "keywords": [
+    "events",
+    "tracking",
+    "custom elements",
+    "analytics"
+  ],
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build:lib": "tsc && vite build",
+    "test": "vitest"
+  },
+  "devDependencies": {
+    "@types/jsdom": "21.1.7",
+    "jsdom": "24.1.0",
+    "typescript": "5.5.3",
+    "vite": "5.3.3",
+    "vite-plugin-dts": "3.9.1",
+    "vitest": "2.0.1"
+  }
+}
