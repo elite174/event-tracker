@@ -1,4 +1,4 @@
-import { EventTrackerElement } from "./lib/event-tracker";
+import { EventTrackerElement } from "./lib";
 
 EventTrackerElement.setEventHandler(console.log);
 

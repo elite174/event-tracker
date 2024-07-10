@@ -1,6 +1,6 @@
 import { describe, expect, vi, beforeAll } from "vitest";
 
-import { EventTrackerElement } from "./event-tracker";
+import { EventTrackerElement } from ".";
 
 describe("EventTrackerElement", () => {
   // define the element before running the tests
