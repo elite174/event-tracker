@@ -1,21 +1,21 @@
-export type ETEvent = (typeof SUPPORTED_EVENT_MAP)[keyof typeof SUPPORTED_EVENT_MAP];
+export type ETEvent = (typeof ET_SUPPORTED_EVENT_MAP)[keyof typeof ET_SUPPORTED_EVENT_MAP];
 export type ETEventHandler = <T>(event: ETEvent, data: T, trackerElement: EventTrackerElement) => void;
-type ObservedAttribute = (typeof SUPPORTED_ATTRIBUTE_MAP)["DISABLED"];
+type ObservedAttribute = (typeof ET_SUPPORTED_ATTRIBUTE_MAP)["DISABLED"];
 
-export const SUPPORTED_ATTRIBUTE_MAP = {
+export const ET_SUPPORTED_ATTRIBUTE_MAP = {
   DISABLED: "disabled",
   EVENT: "event",
   DATA: "data",
 } as const;
 
 /** Supported DOM events */
-export const SUPPORTED_DOM_EVENT_MAP = {
+export const ET_SUPPORTED_DOM_EVENT_MAP = {
   CLICK: "click",
   CHANGE: "change",
 };
 
-export const SUPPORTED_EVENT_MAP = {
-  ...SUPPORTED_DOM_EVENT_MAP,
+export const ET_SUPPORTED_EVENT_MAP = {
+  ...ET_SUPPORTED_DOM_EVENT_MAP,
   /** This event is fired on mount (connectedCallback) */
   APPEAR: "appear",
 } as const;
@@ -27,11 +27,23 @@ const parseBoolean = (value: any): boolean => {
   return true;
 };
 
-const SUPPORTED_EVENTS_SET = new Set<ETEvent>(Object.values(SUPPORTED_EVENT_MAP));
-const SUPPORTED_DOM_EVENTS_SET = new Set(Object.values(SUPPORTED_DOM_EVENT_MAP));
+const SUPPORTED_EVENTS_SET = new Set<ETEvent>(Object.values(ET_SUPPORTED_EVENT_MAP));
+const SUPPORTED_DOM_EVENTS_SET = new Set(Object.values(ET_SUPPORTED_DOM_EVENT_MAP));
+
+export interface EventTrackerHTMLAttributes {
+  /** Disables event tracking */
+  [ET_SUPPORTED_ATTRIBUTE_MAP.DISABLED]?: boolean;
+  /**
+   * Trigger event or multiple events separated by "|".
+   * @see ET_SUPPORTED_EVENT_MAP for supported events
+   */
+  [ET_SUPPORTED_ATTRIBUTE_MAP.EVENT]?: string;
+  /** Custom data which is passed to eventHandler callback */
+  [ET_SUPPORTED_ATTRIBUTE_MAP.DATA]?: string;
+}
 
 export class EventTrackerElement extends HTMLElement {
-  static observedAttributes = [SUPPORTED_ATTRIBUTE_MAP.DISABLED];
+  static observedAttributes = [ET_SUPPORTED_ATTRIBUTE_MAP.DISABLED];
 
   /** This function should be defined from outside. It is used to handle events. */
   private static eventHandler: ETEventHandler = () => {};
@@ -46,7 +58,7 @@ export class EventTrackerElement extends HTMLElement {
 
   private getEventTypes(): ETEvent[] {
     return (
-      this.getAttribute(SUPPORTED_ATTRIBUTE_MAP.EVENT)
+      this.getAttribute(ET_SUPPORTED_ATTRIBUTE_MAP.EVENT)
         ?.split("|")
         .filter((event): event is ETEvent => SUPPORTED_EVENTS_SET.has(event as ETEvent)) ?? []
     );
@@ -54,7 +66,7 @@ export class EventTrackerElement extends HTMLElement {
 
   /** Returns parsed json from SUPPORTED_ATTRIBUTE_MAP.DATA attribute */
   private getParsedData<T>(): T | null {
-    const data = this.getAttribute(SUPPORTED_ATTRIBUTE_MAP.DATA);
+    const data = this.getAttribute(ET_SUPPORTED_ATTRIBUTE_MAP.DATA);
 
     if (!data) return null;
 
@@ -111,7 +123,7 @@ export class EventTrackerElement extends HTMLElement {
 
   attributeChangedCallback(name: ObservedAttribute, _: string, newValue: string) {
     switch (name) {
-      case SUPPORTED_ATTRIBUTE_MAP.DISABLED: {
+      case ET_SUPPORTED_ATTRIBUTE_MAP.DISABLED: {
         this.updateDisabledState(parseBoolean(newValue));
 
         break;
@@ -120,7 +132,7 @@ export class EventTrackerElement extends HTMLElement {
   }
 
   connectedCallback() {
-    this.updateDisabledState(parseBoolean(this.getAttribute(SUPPORTED_ATTRIBUTE_MAP.DISABLED)));
+    this.updateDisabledState(parseBoolean(this.getAttribute(ET_SUPPORTED_ATTRIBUTE_MAP.DISABLED)));
   }
 
   disconnectedCallback() {
