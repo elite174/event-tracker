@@ -8,7 +8,8 @@ This custom element can be used mostly for tracking events for analytics. It wra
 <script>
   // 1. Create event handler
   // trackerElement is the instance of EventTrackerElement
-  const eventHandler = (event, data, trackerElement) => console.log(event, data, trackerElement);
+  const eventHandler = (event, data, trackerElement, targetElement) =>
+    console.log(event, data, trackerElement, targetElement);
 
   // 2. Set event handler BEFORE register it (to correctly handle `appear` events)
   EventTrackerElement.setEventHandler(eventHandler);
@@ -26,38 +27,78 @@ This custom element can be used mostly for tracking events for analytics. It wra
 
 <h1>Examples</h1>
 <!-- On every button click event handler will be fired -->
-<event-tracker event="click" data='{a: "hi"}'>
+<event-tracker>
   <button type="button">Click me</button>
 </event-tracker>
+<script>
+  document.querySelector("event-tracker").trackConfig = {
+    // listen to DOM events
+    click: true,
+    // skip some events
+    mousedown: false,
+    mouseup: {
+      // pass custom data
+      data: {
+        customData: "Hello",
+      },
+      // pass event listener options
+      capture: true,
+      once: true,
+      passive: false,
+    },
+  };
 
-<!-- Data can be string or number too -->
-<event-tracker event="click" data="Some string">
-  <button type="button">Click me</button>
-</event-tracker>
-
-<!-- You may not pass any data if you don't need it -->
-<event-tracker event="click">
-  <button type="button">Click me</button>
-</event-tracker>
-
-<!-- You may track multiple events at the same time -->
-<event-tracker event="click|appear">
-  <button type="button">Click me</button>
-</event-tracker>
-
-<!-- You may disable tracking. No events will be called -->
-<event-tracker event="click|appear" disabled>
-  <button type="button">Click me</button>
-</event-tracker>
+  // disable if necessary
+  document.querySelector("event-tracker").disabled = true;
+</script>
 ```
 
 ## Supported attributes
 
-- `event` - trigger type. Possible options:
-  - `appear` - will be triggered on mount (`connectedCallback`)
-  - `change`, `click` - DOM events
-- `data` - a data which will be passed to callback.
 - `disabled` - disables tracking events
+
+## Types
+
+```tsx
+export type ETEventHandler = <T>(
+  event: Event,
+  data: T,
+  trackerElement: EventTrackerElement,
+  targetElement: HTMLElement
+) => void;
+export declare const ET_SUPPORTED_ATTRIBUTE_MAP: {
+  readonly DISABLED: "disabled";
+};
+export type ETEventName = keyof HTMLElementEventMap;
+export type ETEventOptions =
+  | boolean
+  | ({
+      data?: string | number | boolean | object;
+    } & Omit<AddEventListenerOptions, "signal">);
+export type ETEventConfig = Partial<Record<ETEventName, ETEventOptions>>;
+export interface EventTrackerHTMLAttributes {
+  /** Disables event tracking */
+  [ET_SUPPORTED_ATTRIBUTE_MAP.DISABLED]?: boolean;
+}
+export declare class EventTrackerElement extends HTMLElement {
+  static observedAttributes: "disabled"[];
+  /** This function should be defined from outside. It is used to handle events. */
+  private static eventHandler;
+  /** Static setter for all  */
+  static setEventHandler(eventHandler: ETEventHandler): void;
+  private currentTrackConfig;
+  /** This abort controller is used to remove event listeners */
+  private eventsAbortController;
+  set trackConfig(val: ETEventConfig | undefined);
+  get trackConfig(): ETEventConfig | undefined;
+  set disabled(value: boolean | undefined);
+  get disabled(): boolean | undefined;
+  /** This function registers callbacks on interaction events (like 'click') */
+  private registerDOMEventsCallbacks;
+  private unregisterEventListeners;
+  disconnectedCallback(): void;
+}
+```
 
 ## LICENSE
 

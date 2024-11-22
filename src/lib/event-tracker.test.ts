@@ -1,6 +1,18 @@
 import { describe, expect, vi, beforeAll } from "vitest";
 
-import { EventTrackerElement } from ".";
+import { ETEventConfig, ETEventHandler, EventTrackerElement } from ".";
+
+const setTrackConfig = (config: ETEventConfig) => {
+  const trackerElement = window.document.querySelector("event-tracker") as EventTrackerElement | undefined;
+
+  if (trackerElement) trackerElement.trackConfig = config;
+};
+
+const setDisabled = (disabled: boolean) => {
+  const trackerElement = window.document.querySelector("event-tracker") as EventTrackerElement | undefined;
+
+  if (trackerElement) trackerElement.disabled = disabled;
+};
 
 describe("EventTrackerElement", () => {
   // define the element before running the tests
@@ -23,12 +35,13 @@ describe("EventTrackerElement", () => {
       const mockHandler = getMockHandlerAttachedToCustomElement();
 
       window.document.body.innerHTML = `
-        <event-tracker event="click">
+        <event-tracker>
           <div>
             <button id="button">button</button>
           </div>
         </event-tracker>`;
 
+      setTrackConfig({ click: true });
       window.document.getElementById("button")?.click();
 
       expect(mockHandler).not.toBeCalled();
@@ -36,86 +49,82 @@ describe("EventTrackerElement", () => {
   });
 
   describe("should correctly handle events", (test) => {
-    test("appear event", () => {
-      const mockHandler = getMockHandlerAttachedToCustomElement();
-
-      window.document.body.innerHTML = `
-        <event-tracker event="appear">
-            <button>button</button>
-        </event-tracker>`;
-
-      expect(mockHandler).toBeCalledTimes(1);
-      expect(mockHandler.mock.lastCall?.length).toBe(3);
-      expect(mockHandler.mock.lastCall?.slice(0, 2)).toStrictEqual(["appear", null]);
-    });
-
     test("click event", () => {
       const mockHandler = getMockHandlerAttachedToCustomElement();
 
       window.document.body.innerHTML = `
-      <event-tracker event="click">
+      <event-tracker>
           <button id="button">button</button>
       </event-tracker>`;
 
+      setTrackConfig({ click: true });
       window.document.getElementById("button")?.click();
 
       expect(mockHandler).toBeCalledTimes(1);
-      expect(mockHandler.mock.lastCall?.length).toBe(3);
-      expect(mockHandler.mock.lastCall?.slice(0, 2)).toStrictEqual(["click", null]);
+      const lastCallArguments = mockHandler.mock.lastCall as Parameters<ETEventHandler> | undefined;
+
+      expect(lastCallArguments?.length).toBe(4);
+      expect(lastCallArguments?.[0].type).toBe("click");
+      expect(lastCallArguments?.[1]).toBe(undefined);
     });
 
     test("multiple events", () => {
       const mockHandler = getMockHandlerAttachedToCustomElement();
 
       window.document.body.innerHTML = `
-        <event-tracker event="appear|click">
+        <event-tracker>
             <button id="button">button</button>
         </event-tracker>`;
 
+      setTrackConfig({ click: true, mousedown: true });
+
       window.document.getElementById("button")?.click();
+      window.document.getElementById("button")?.dispatchEvent(new Event("mousedown"));
 
       expect(mockHandler).toBeCalledTimes(2);
-      expect(mockHandler.mock.calls[0].slice(0, 2)).toStrictEqual(["appear", null]);
-      expect(mockHandler.mock.calls[1].slice(0, 2)).toStrictEqual(["click", null]);
+      expect((mockHandler.mock.calls[0] as Parameters<ETEventHandler> | undefined)?.[0].type).toBe("click");
+      expect((mockHandler.mock.calls[1] as Parameters<ETEventHandler> | undefined)?.[0].type).toBe("mousedown");
     });
   });
 
-  describe("should correctly parse the data", (test) => {
+  describe("should correctly return the data", (test) => {
     test("should parse object data", () => {
       const mockHandler = getMockHandlerAttachedToCustomElement();
 
-      const testData = { data: 123 };
-
       window.document.body.innerHTML = `
-        <event-tracker event="appear" data='${JSON.stringify(testData)}'>
+        <event-tracker>
             <button>button</button>
         </event-tracker>`;
 
-      expect(mockHandler.mock.lastCall?.slice(0, 2)).toStrictEqual(["appear", testData]);
+      setTrackConfig({
+        click: {
+          data: 123,
+        },
+      });
+      window.document.querySelector("button")?.click();
+
+      const lastCallArguments = mockHandler.mock.lastCall as Parameters<ETEventHandler> | undefined;
+
+      expect(lastCallArguments?.[0].type).toBe("click");
+      expect(lastCallArguments?.[1]).toBe(123);
     });
 
-    test("should parse non-object data", () => {
-      const mockHandler = getMockHandlerAttachedToCustomElement();
-
-      const testData = "test";
-
-      window.document.body.innerHTML = `
-        <event-tracker event="appear" data="${testData}">
-            <button>button</button>
-        </event-tracker>`;
-
-      expect(mockHandler.mock.lastCall?.slice(0, 2)).toStrictEqual(["appear", testData]);
-    });
-
-    test("should return null if data is not provided", () => {
+    test("should return undefined if data is not provided", () => {
       const mockHandler = getMockHandlerAttachedToCustomElement();
 
       window.document.body.innerHTML = `
-        <event-tracker event="appear">
+        <event-tracker>
             <button>button</button>
         </event-tracker>`;
 
-      expect(mockHandler.mock.lastCall?.slice(0, 2)).toStrictEqual(["appear", null]);
+      setTrackConfig({ click: true });
+
+      window.document.querySelector("button")?.click();
+
+      const lastCallArguments = mockHandler.mock.lastCall as Parameters<ETEventHandler> | undefined;
+
+      expect(lastCallArguments?.[0].type).toBe("click");
+      expect(lastCallArguments?.[1]).toBe(undefined);
     });
   });
 
@@ -124,36 +133,43 @@ describe("EventTrackerElement", () => {
       const mockHandler = getMockHandlerAttachedToCustomElement();
 
       window.document.body.innerHTML = `
-        <event-tracker event="appear" disabled>
+        <event-tracker>
             <button>button</button>
         </event-tracker>`;
 
+      setTrackConfig({ click: true });
+      setDisabled(true);
+      window.document.querySelector("button")?.click();
+
+      // @ts-ignore
+      expect(window.document.querySelector("event-tracker")?.disabled).toBe(true);
+      expect(window.document.querySelector("event-tracker")?.getAttribute("disabled")).toBe("true");
       expect(mockHandler).not.toBeCalled();
-    });
-
-    test("should handle events if not disabled", () => {
-      const mockHandler = getMockHandlerAttachedToCustomElement();
-
-      window.document.body.innerHTML = `
-        <event-tracker event="appear">
-            <button>button</button>
-        </event-tracker>`;
-
-      expect(mockHandler).toBeCalled();
     });
 
     test("should correctly handle switching from disabled to enabled", () => {
       const mockHandler = getMockHandlerAttachedToCustomElement();
 
       window.document.body.innerHTML = `
-        <event-tracker event="appear" disabled>
+        <event-tracker>
             <button>button</button>
         </event-tracker>`;
 
+      setTrackConfig({ click: true });
+      setDisabled(true);
+      window.document.querySelector("button")?.click();
+
+      // @ts-ignore
+      expect(window.document.querySelector("event-tracker")?.disabled).toBe(true);
+      expect(window.document.querySelector("event-tracker")?.getAttribute("disabled")).toBe("true");
       expect(mockHandler).not.toBeCalled();
 
-      window.document.querySelector("event-tracker")?.removeAttribute("disabled");
+      setDisabled(false);
 
+      window.document.querySelector("button")?.click();
+      // @ts-ignore
+      expect(window.document.querySelector("event-tracker")?.disabled).toBe(false);
+      expect(window.document.querySelector("event-tracker")?.getAttribute("disabled")).toBe(null);
       expect(mockHandler).toBeCalled();
     });
 
@@ -161,16 +177,24 @@ describe("EventTrackerElement", () => {
       const mockHandler = getMockHandlerAttachedToCustomElement();
 
       window.document.body.innerHTML = `
-        <event-tracker event="click">
-            <button id="button">button</button>
+        <event-tracker>
+            <button>button</button>
         </event-tracker>`;
 
-      window.document.getElementById("button")?.click();
-      expect(mockHandler).toBeCalledTimes(1);
+      setTrackConfig({ click: true });
+      window.document.querySelector("button")?.click();
 
-      window.document.querySelector("event-tracker")?.setAttribute("disabled", "");
-      window.document.getElementById("button")?.click();
+      // @ts-ignore
+      expect(window.document.querySelector("event-tracker")?.disabled).toBe(false);
+      expect(window.document.querySelector("event-tracker")?.getAttribute("disabled")).toBe(null);
+      expect(mockHandler).toBeCalled();
 
+      setDisabled(true);
+      window.document.querySelector("button")?.click();
+
+      // @ts-ignore
+      expect(window.document.querySelector("event-tracker")?.disabled).toBe(true);
+      expect(window.document.querySelector("event-tracker")?.getAttribute("disabled")).toBe("true");
       expect(mockHandler).toBeCalledTimes(1);
     });
   });

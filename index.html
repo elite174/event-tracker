@@ -8,9 +8,14 @@
   </head>
   <body>
     <h1>Test page</h1>
-    <event-tracker event="click" data='{a: "hi"}'>
+    <event-tracker>
       <button type="button">Click me</button>
     </event-tracker>
     <script type="module" src="/src/example.ts"></script>
+    <script type="module">
+      document.querySelector("event-tracker").trackConfig = {
+        click: { data: 123 },
+      };
+    </script>
   </body>
 </html>
