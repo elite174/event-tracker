@@ -8,7 +8,7 @@
   </head>
   <body>
     <h1>Test page</h1>
-    <event-tracker>
+    <event-tracker disabled>
       <button type="button">Click me</button>
     </event-tracker>
     <script type="module" src="/src/example.ts"></script>
@@ -16,6 +16,10 @@
       document.querySelector("event-tracker").trackConfig = {
         click: { data: 123 },
       };
+
+      setTimeout(() => {
+        document.querySelector("event-tracker").setAttribute("disabled", false);
+      }, 3000);
     </script>
   </body>
 </html>

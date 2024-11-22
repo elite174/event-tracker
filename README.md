@@ -66,9 +66,6 @@ export type ETEventHandler = <T>(
   trackerElement: EventTrackerElement,
   targetElement: HTMLElement
 ) => void;
-export declare const ET_SUPPORTED_ATTRIBUTE_MAP: {
-  readonly DISABLED: "disabled";
-};
 export type ETEventName = keyof HTMLElementEventMap;
 export type ETEventOptions =
   | boolean
@@ -76,12 +73,7 @@ export type ETEventOptions =
       data?: string | number | boolean | object;
     } & Omit<AddEventListenerOptions, "signal">);
 export type ETEventConfig = Partial<Record<ETEventName, ETEventOptions>>;
-export interface EventTrackerHTMLAttributes {
-  /** Disables event tracking */
-  [ET_SUPPORTED_ATTRIBUTE_MAP.DISABLED]?: boolean;
-}
 export declare class EventTrackerElement extends HTMLElement {
-  static observedAttributes: "disabled"[];
   /** This function should be defined from outside. It is used to handle events. */
   private static eventHandler;
   /** Static setter for all  */
@@ -89,11 +81,10 @@ export declare class EventTrackerElement extends HTMLElement {
   private currentTrackConfig;
   /** This abort controller is used to remove event listeners */
   private eventsAbortController;
-  set trackConfig(val: ETEventConfig | undefined);
+  set trackConfig(config: ETEventConfig | undefined);
   get trackConfig(): ETEventConfig | undefined;
   set disabled(value: boolean | undefined);
   get disabled(): boolean | undefined;
-  /** This function registers callbacks on interaction events (like 'click') */
   private registerDOMEventsCallbacks;
   private unregisterEventListeners;
   disconnectedCallback(): void;
